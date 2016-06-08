@@ -80,6 +80,7 @@ zip,latitude,longitude,city,state,county,name
 20076,38.893311,-77.014647,Washington,DC,District Of Columbia,Washington DC
 20066,38.893311,-77.014647,Washington,DC,District Of Columbia,Washington DC
 20078,38.893311,-77.014647,Washington,DC,District Of Columbia,Washington DC
+60399,,,Bensenville,IL,Du Page,Illinois
 20068,38.893311,-77.014647,Washington,DC,District Of Columbia,Washington DC
 20081,38.893311,-77.014647,Washington,DC,District Of Columbia,Washington DC
 20071,38.893311,-77.014647,Washington,DC,District Of Columbia,Washington DC
@@ -26045,7 +26046,6 @@ zip,latitude,longitude,city,state,county,name
 60152,42.255176,-88.607897,Marengo,IL,Mchenry,Illinois
 60304,41.811929,-87.68732,Oak Park,IL,Cook,Illinois
 60154,41.811929,-87.68732,Westchester,IL,Cook,Illinois
-60399,,,Bensenville,IL,Du Page,Illinois
 60156,,,Lake In The Hills,IL,Mchenry,Illinois
 60401,41.356872,-87.626723,Beecher,IL,Will,Illinois
 60161,41.811929,-87.68732,Melrose Park,IL,Cook,Illinois
