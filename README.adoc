@@ -1,4 +1,4 @@
-= GemFire - Greenplum Demo
+= Real-Time Fraud Detection with Data Microservices
 
 === Architecture overview
 
