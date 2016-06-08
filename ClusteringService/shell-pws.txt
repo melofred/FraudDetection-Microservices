@@ -1,0 +1,32 @@
+module register --name pmmlv2 --uri maven://org.springframework.cloud.stream.module:pmml-processor-patched:jar:exec:1.0.0.BUILD-SNAPSHOT --type processor
+
+
+
+stream create --name cart_add --definition "http | add: httpclient --url-expression=\"'http://recommender-service.cfapps.io/Recommender/orders/new/'.concat(#jsonPath(payload,'input.customerId')).concat('/').concat(#jsonPath(payload,'input.productId'))\" | log " --deploy
+
+
+stream create --name recommendations --definition ":cart_add.http > 
+											enrich: httpclient --url-expression=\"'http://recommender-service.cfapps.io/Recommender/portifolio/'.concat(#jsonPath(payload,'input.customerId'))\" | 
+											evaluate: pmmlv2 --modelLocation=http://recommender-service.cfapps.io/Recommender/model.pmml.xml --inputs='field_0=payload.products[0].bought, field_1=payload.products[1].bought, field_2=payload.products[2].bought, field_3=payload.products[3].bought, field_4=payload.products[4].bought, field_5=payload.products[5].bought'  --inputType='application/x-spring-tuple' --outputType='application/json' | 
+											redis --server=pub-redis-15513.us-east-1-4.5.ec2.garantiadata.com --port=15513 --security=bWrzGp8q1W4fjskp --keyExpression=\"'Cluster:Customer::'.concat(#jsonPath(payload,'customerId'))\"          
+											" --deploy	
+
+stream create --name model_train --definition "trigger --fixedDelay=60 | 
+											train: httpclient --url='http://recommender-service.cfapps.io/Recommender/train' | 
+											logger: log " --deploy
+
+
+
+
+http post  --target http://http-overreserved-werwolf.cfapps.io --contentType application/json --data '{"input":{ "customerId" : 0, "productId" : 1 }}'
+    
+http post  --target http://cart_add-http.cfapps.io --contentType application/json --data '{"input":{ "customerId" : 0, "productId" : 1 }}'
+
+dataflow:>module register --name http --type source --uri maven://org.springframework.cloud.stream.app:spring-cloud-starter-stream-source-http:1.0.0.BUILD-SNAPSHOT --force
+Successfully registered module 'source:http'
+dataflow:>module register --name httpclient --type processor --uri maven://org.springframework.cloud.stream.app:spring-cloud-starter-stream-processor-httpclient:1.0.0.BUILD-SNAPSHOT --force
+Successfully registered module 'processor:httpclient'
+dataflow:>module register --name pmml --type processor --uri maven://org.springframework.cloud.stream.app:spring-cloud-starter-stream-processor-pmml:1.0.0.BUILD-SNAPSHOT --force
+Successfully registered module 'processor:pmml'
+dataflow:>module register --name redis --type sink --uri maven://org.springframework.cloud.stream.app:spring-cloud-starter-stream-sink-redis:1.0.0.BUILD-SNAPSHOT --force
+Successfully registered module 'sink:redis'

@@ -1,0 +1,6 @@
+stream create --name cart_add --definition "http | add: httpclient --url-expression=\"'http://recommender-service.cfapps.io/Cart/orders/new/'.concat(#jsonPath(payload,'input.customerId')).concat('/').concat(#jsonPath(payload,'input.productId'))\" | log " --deploy
+
+stream create --name recommendations --definition ":cart_add.http > enrich: httpclient --url-expression=\"'http://recommender-service.cfapps.io/Cart/items/'.concat(#jsonPath(payload,'input.customerId'))\" | evaluate: pmml --modelLocation=http://recommender-service.cfapps.io/Recommendations/model.pmml.xml --inputs='field_0=payload.products[0].bought, field_1=payload.products[1].bought, field_2=payload.products[2].bought, field_3=payload.products[3].bought, field_4=payload.products[4].bought, field_5=payload.products[5].bought'  --inputType='application/x-spring-tuple' --outputType='application/json' | redis --keyExpression=\"'Cluster:Customer::'.concat(#jsonPath(payload,'customerId'))\"  " --deploy	
+
+stream create --name model_train --definition "trigger --fixedDelay=60 |  train: httpclient --url='http://recommender-service.cfapps.io/Recommendations/train' |  logger: log " --deploy
+

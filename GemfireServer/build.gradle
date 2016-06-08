@@ -1,0 +1,51 @@
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:1.2.3.RELEASE")
+	}
+}
+
+apply plugin: 'spring-boot'
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+
+repositories {
+    mavenCentral()        
+    mavenLocal()
+    "https://repository.apache.org/content/repositories/snapshots/"
+    maven { url "http://repo.spring.io/libs-snapshot" }
+}
+
+
+dependencies {
+
+    compile ("io.pivotal.gemfire:gemfire-greenplum:1.0.0-beta-6-SNAPSHOT")
+    compile ("com.gemstone.gemfire:gemfire:8.1.0")
+    compile ("org.apache.logging.log4j:log4j-core:2.4")	
+    
+}
+
+jar {
+    baseName='Server'
+    version = version
+}
+
+task serverJar(type: Jar, dependsOn: jar){
+    baseName = 'server'
+    from sourceSets.main.output.classesDir
+    include 'io/pivotal/demo/sko/**/*.*'
+}
+
+bootRepackage.withJarTask = jar
+
+
+artifacts{
+    archives jar, serverJar
+}   
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.3'
+}

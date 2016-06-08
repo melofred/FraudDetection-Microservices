@@ -1,0 +1,18 @@
+---
+applications:
+- name: pos_emulator
+  memory: 512M 
+  instances: 1
+  host: pos_emulator
+  path: build/libs/PoS_Emulator.jar
+  no-route: true
+  services:
+    - gemfire
+  env:
+    skipSetup: true
+    numberOfTransactions: -1
+    delayInMs: 50
+    
+# cf push --no-start   
+# cf set-health-check pos_emulator none
+# cf start pos_emulator    

@@ -1,0 +1,15 @@
+---
+applications:
+- name: webconsole
+  memory: 512M 
+  instances: 1
+  host: webconsole
+  path: build/libs/WebConsole.jar
+  env:
+    locatorHost: 192.168.9.1
+    locatorPort: 10334
+  services:
+    - gemfire
+    
+  
+    

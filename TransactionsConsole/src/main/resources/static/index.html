@@ -1,0 +1,383 @@
+<html lang="en">
+<head>
+<meta charset="utf-8">
+
+<title>Pivotal Demo</title>
+<meta http-equiv="Cache-Control"
+	content="no-store, no-cache, must-revalidate, max-age=0">
+	<!-- pivotal favicon -->
+	<link rel="shortcut icon" href="img/favicon.ico"/>
+
+<style>
+
+.land {
+  fill: #ddd;
+}
+
+.border {
+  fill: none;
+  stroke: #fff;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.bubble {
+  fill: green;
+  fill-opacity: .5;
+  stroke: #fff;
+  stroke-width: .5px;
+}
+
+.fraud {
+  fill: red;
+  fill-opacity: .5;
+  stroke: #fff;
+  stroke-width: .5px;
+}
+
+.bubble :hover {
+  stroke: #000;
+}
+
+body, html{
+  margin:0;
+  padding:0;
+  height:80%;
+  width:100%;
+}
+
+.messages{
+ 	float: right;
+    width: 160px;
+    border: 2px solid;
+}
+
+  
+
+</style>
+<link rel="stylesheet" type="text/css" href="css/headerfooter.css">
+<link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+
+<body onLoad="updateData()")>
+
+    <div class="container">
+    	<div class="nav-bar">
+	        <div class="logo">
+				<img src="img/pivotal-logo.png" width="200" height="45" align="top">   	           
+   	        </div>
+	        <br>
+	        <div class="nav" >
+   	            
+	        	Anti-Fraud Real Time Dashboard
+
+	        </div>
+	    </div>
+	</div>
+
+	<div id="maincontent" style="overflow-y: scroll;">
+		<div align="center"> 
+			<div class="banner" >
+				Transactions per PoS / US County
+			</div>
+		</div>
+		
+		<div>
+	  		<div id="map" class="usmap"></div>
+	  		
+	  		<div id="messages" class="messages">
+	            <table>
+	            </table>
+	            
+	            <div id="scrollable" style="width: 100%">
+		            <table class="scroll-table">
+	            	<thead id="table_header">
+	            		<tr>
+	            			<th colspan="3" style="text-align: center; width: 237px; font-size: 15px; padding-top: 10px; padding-bottom: 10px">
+	            				Suspect Transactions
+	            			</th>
+	            		</tr>
+	            		<tr style="width: 100%">
+	            			<th style="text-align: left; width: 50%">Location</th>
+	            			<th style="text-align: left; width: 30%">Value</th>
+	            			<th style="text-align: left; width: 20%">Reason</th>
+	            		</tr>
+	            	</thead>	            		                
+		                <tbody id="possible_fraud">
+		                </tbody>
+		            </table>
+	             </div>
+			</div>
+		</div>
+	</div>  		
+	
+    <div class="container">
+        <div class="footer">
+          <div class="footer-text">©&nbsp;2015 Pivotal Software, Inc.  </div>
+
+          <div class="footer-poweredby" > 
+	          	<img src="img/p-gemfire.png" width=180 height=54 >
+	          	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+          		<img src="img/p-greenplum.png" width=180 height=54 > 
+          </div>  
+          
+	    </div>
+	</div>  		
+
+
+
+<script src="js/d3.v3.min.js"></script>
+<script src="js/topojson.v1.min.js"></script>
+<script src="js/jquery.min.js"></script>
+<script>
+
+var width = 920,//960,
+    height = 600; //600;
+
+var formatNumber = d3.format(",.0f");
+
+var path = d3.geo.path()
+    .projection(null);
+
+var radius = d3.scale.sqrt()
+    .domain([0, 200])
+    .range([0, 15]);
+
+var svg = d3.select("#map").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+
+
+/*
+var legend = svg.append("g")
+    .attr("class", "legend")
+    .attr("transform", "translate(" + (width - 50) + "," + (height - 20) + ")")
+  .selectAll("g")
+    .data([1e6, 5e6, 1e7])
+  .enter().append("g");
+
+legend.append("circle")
+    .attr("cy", function(d) { return -radius(d); })
+    .attr("r", radius);
+
+legend.append("text")
+    .attr("y", function(d) { return -2 * radius(d); })
+    .attr("dy", "1.3em")
+    .text(d3.format(".1s"));
+*/
+
+
+
+d3.json("us.json", function(error, us) {
+  if (error) throw error;
+
+ 
+  // create the path
+  //var path = d3.geo.path().projection(projection);
+  
+  
+  svg.append("path")
+      .datum(topojson.feature(us, us.objects.nation))
+      .attr("class", "land")
+      .attr("d", path);
+
+  svg.append("path")
+      .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
+      .attr("class", "border border--state")
+      .attr("d", path);
+
+  svg.append("g")
+  		.attr("class", "bubble")
+		.selectAll("circle")
+  		.data(topojson.feature(us, us.objects.counties).features, function(d) { return d.properties.name; })
+		.enter().append("circle")
+  		.attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+  		.attr("r", 1.5)
+  		.attr("class", function(d) { return d.properties.name; }); 
+  
+
+  
+  /*
+  svg.append("g")
+      .attr("class", "bubble")
+    .selectAll("circle")
+      .data(topojson.feature(us, us.objects.counties).features
+        .sort(function(a, b) { return b.properties.population - a.properties.population; }))
+    .enter().append("circle")
+      .attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+      .attr("r", function(d) { return radius(d.properties.population); })
+    .append("title")
+      .text(function(d) {
+        return d.properties.name
+            + "\nPopulation " + formatNumber(d.properties.population);
+      });
+  */
+});
+
+d3.select(self.frameElement).style("height", height + "px");
+
+
+/* 
+ * 
+ */
+
+	 var loadFromGPDB = function() {
+	 	
+	     $.post("controller/refreshFraudAlertsFromGPDB");            	
+	 };
+
+    
+
+    var updateData = function() {
+
+    	d3.json( "controller/getTransactionsMap", function(data) {
+    		var nodes = d3.range(data.transactions.length).map(function(i) { 
+    				return {
+    					id: data.transactions[i].id,
+    					name: data.transactions[i].location,
+    					radius: data.transactions[i].value,
+    					value: data.transactions[i].value,
+    					location: data.transactions[i].location,
+    					ts: data.transactions[i].timestamp    					
+    				};
+    		});
+    		  
+    		nodes.forEach(function(node){
+        		svg.select("#"+node.name.split('. ').join('.').split(' ').join('.'))
+    	 	    .attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+			    .transition()
+    			//.duration(2000)
+    			.attr("r", function(d) { return radius(node.radius); })
+        		.transition()
+        		.attr("r", function(d) { return radius(1.5)}); 	
+        	});
+        	
+
+    		
+
+    	});
+
+    		
+
+        d3.json( "controller/getSuspiciousTransactionsMap", function(data) {
+	        		var nodes = d3.range(data.transactions.length).map(function(i) { 
+	        				return {
+	        					name: data.transactions[i].location,
+	        					radius: data.transactions[i].value,
+	        					value: data.transactions[i].value,
+	        					location: data.transactions[i].location,
+	        					ts: data.transactions[i].timestamp,
+	        					reason: data.transactions[i].reason
+	        				};
+	        		});
+        		  
+        		nodes.forEach(function(node){
+            		svg.select("#"+node.name.split('. ').join('.').split(' ').join('.'))
+        	 	    .attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+    			    .transition()
+        			.attr("r", function(d) { return radius(node.radius*3); })
+            		.attr("class", "fraud")
+            		.transition()
+        			.duration(2000)  // find out how to make it blink
+            		.attr("r", function(d) { return radius(1.5); });
+        			
+        		});   
+
+        		nodes.forEach(function(node){
+
+            		tbody = d3.select("#possible_fraud");
+    		    		
+            		row = tbody.insert("tr",":first-child").attr("width", "100%");
+            		
+            		row.append("td").style({width: "50%"})
+    		           	 .text(function(d) {return node.location.substring(0,26)});
+            		row.append("td").style({width: "25%"})
+		       		   	 .text(function(d) {return "$ "+node.value.toFixed(2)});
+            		row.append("td").style({width: "25%"})
+       				   	 .text(function(d) {return node.reason});
+        				
+        		});  		
+                   			
+        		
+        	 
+    		
+    	});
+            		
+    		
+    		/*
+    		selectedNodes = 
+    			svg.append("g")
+    	    	//.attr("class", "bubble")
+    	  		.selectAll("circle");
+    	  		//.data(nodes, function(d) { d.name; });
+    		
+    		svg.append("g")
+    	    	.attr("class", "bubble")
+    	  		.selectAll("circle")
+    	  		.data(nodes, function(d) { d.name; })
+    	  		.enter()
+				.append('circle')
+	            .text(function(d){return d;});
+    	    	//.update()
+    	 	    //.attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+			    //.transition()
+    			//.duration(2000)
+    			//.attr("r", function(d) { return radius(d.radius); });
+
+    		
+    		*/
+    		/*
+    		dataNodes = nodes;
+
+    	      		    		
+    		var existingNodes = container.selectAll('circle');
+    		
+    		var vis = container.selectAll('circle').data(dataNodes, function(d) { return d.name; });
+    		
+    		
+    		// enter
+    		
+    		container.selectAll('circle').data(dataNodes, function(d) { return d.name; })
+    		  .remove();
+    		
+    		container.selectAll('circle').data(dataNodes, function(d) { return d.name; })
+    		  .enter()
+    		  .append('circle')
+    		  .attr("r", function(d) { return d.radius; })
+    		  .attr("cx", function(d) { return d.x; })
+    		  .attr("cy", function(d) { return d.y; })
+    		  .style("fill", function(d, i) {
+    			  return color(i % 3); 
+    			})
+    		  .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+    		  .style('opacity', 1)
+    		  .style("visibility", function(d) {
+    			  if (selectedDevice==null || selectedDevice=='undefined') return 'visible';
+    			  return selectedDevice==d.name? 'visible' : 'hidden';
+                });
+    		
+    	      $('svg circle').tipsy({ 
+    	          gravity: 'w',
+    	          fade: true,
+    	          html: true, 
+    	          title: function() {
+    	            var d = this.__data__;
+    	            return '<span> Device ID: ' + d.name + '</span>'; 
+    	          }
+    	        });
+    		*/
+    	
+
+        
+    	
+	    setTimeout(loadFromGPDB, 5000);
+        setTimeout(updateData, 800);
+	};
+	
+    
+    
+	
+	
+
+</script>

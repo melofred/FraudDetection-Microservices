@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!DOCTYPE client-cache PUBLIC
+        "-//GemStone Systems, Inc.//GemFire Declarative Caching 8.0//EN"
+        "http://www.gemstone.com/dtd/cache8_0.dtd">
+
+<client-cache>
+
+
+	<pdx read-serialized="true" persistent="false">
+		<pdx-serializer>
+			<class-name>com.gemstone.gemfire.pdx.ReflectionBasedAutoSerializer</class-name>
+			<parameter name="classes">
+				<string>io.pivotal.gemfire.sko.entity.*</string>
+			</parameter>
+		</pdx-serializer>
+	</pdx>
+
+
+    <region name="PoS">
+        <region-attributes refid="PROXY">
+        </region-attributes>
+    </region>
+    
+    <region name="Transaction">
+        <region-attributes refid="PROXY">
+            <cache-listener>
+                <class-name>io.pivotal.demo.sko.TransactionListener</class-name>
+            </cache-listener>
+        </region-attributes>
+    </region>
+
+    <region name="Suspect">
+        <region-attributes refid="PROXY">
+            <cache-listener>
+                <class-name>io.pivotal.demo.sko.SuspectTransactionListener</class-name>
+            </cache-listener>
+        </region-attributes>
+    </region>
+    
+</client-cache>

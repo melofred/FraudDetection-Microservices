@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2">
+    <Header description="k-means clustering">
+        <Application name="Apache Spark MLlib" version="1.6.0"/>
+        <Timestamp>2016-06-07T17:34:35</Timestamp>
+    </Header>
+    <DataDictionary numberOfFields="2">
+        <DataField name="field_0" optype="continuous" dataType="double"/>
+        <DataField name="field_1" optype="continuous" dataType="double"/>
+    </DataDictionary>
+    <ClusteringModel modelName="k-means" functionName="clustering" modelClass="centerBased" numberOfClusters="3">
+        <MiningSchema>
+            <MiningField name="field_0" usageType="active"/>
+            <MiningField name="field_1" usageType="active"/>
+        </MiningSchema>
+        <ComparisonMeasure kind="distance">
+            <squaredEuclidean/>
+        </ComparisonMeasure>
+        <ClusteringField field="field_0" compareFunction="absDiff"/>
+        <ClusteringField field="field_1" compareFunction="absDiff"/>
+        <Cluster name="cluster_0">
+            <Array n="2" type="real">27.957910385140117 3.348743643575868</Array>
+        </Cluster>
+        <Cluster name="cluster_1">
+            <Array n="2" type="real">27.964691237009532 1.7437907699218391</Array>
+        </Cluster>
+        <Cluster name="cluster_2">
+            <Array n="2" type="real">32.435035836971856 2.546409086520879</Array>
+        </Cluster>
+    </ClusteringModel>
+</PMML>

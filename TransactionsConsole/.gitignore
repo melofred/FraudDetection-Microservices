@@ -1,0 +1,6 @@
+/bin/
+/client/client.out
+*.iml
+.idea
+
+/build/

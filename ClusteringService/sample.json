@@ -1,0 +1,23 @@
+[
+	{"customerId":0,"productId":1},
+	{"customerId":0,"productId":2},
+	{"customerId":0,"productId":3},
+	{"customerId":1,"productId":4},
+	{"customerId":1,"productId":5},
+	{"customerId":1,"productId":6},
+	{"customerId":2,"productId":1},
+	{"customerId":2,"productId":3},
+	{"customerId":3,"productId":5},
+	{"customerId":3,"productId":6}
+	
+]
+
+
+
+Customer 0 = has baby  (products 0-3)
+Customer 1 = electronic gadgets (products 4-7)
+Customer 3 = has pets (products 8-10)
+
+Customer 0 = has baby  (products 0-3)
+Customer 1 = electronic gadgets (products 4-7)
+Customer 3 = has pets (products 8-10)

@@ -1,0 +1,23 @@
+module register --name pmmlv2 --uri maven://org.springframework.cloud.stream.module:pmml-processor-patched:jar:exec:1.0.0.BUILD-SNAPSHOT --type processor
+
+
+
+stream create --name cart_add --definition "http | add: httpclient --url-expression=\"'http://recommender-service.local.pcfdev.io/Recommender/orders/new/'.concat(#jsonPath(payload,'input.customerId')).concat('/').concat(#jsonPath(payload,'input.productId'))\" | log " --deploy
+
+
+stream create --name recommendations --definition ":cart_add.http > 
+											enrich: httpclient --url-expression=\"'http://recommender-service.local.pcfdev.io/Recommender/portifolio/'.concat(#jsonPath(payload,'input.customerId'))\" | 
+											evaluate: pmmlv2 --modelLocation=http://recommender-service.local.pcfdev.io/Recommender/model.pmml.xml --inputs='field_0=payload.products[0].bought, field_1=payload.products[1].bought, field_2=payload.products[2].bought, field_3=payload.products[3].bought, field_4=payload.products[4].bought, field_5=payload.products[5].bought'  --inputType='application/x-spring-tuple' --outputType='application/json' | 
+											redis --server=redis.local.pcfdev.io --port=35964 --security=2f963b9b-3641-40a8-ad34-aa58127aabd4 --keyExpression=\"'Cluster:Customer::'.concat(#jsonPath(payload,'customerId'))\"          
+											" --deploy	
+
+stream create --name model_train --definition "trigger --fixedDelay=60 | 
+											train: httpclient --url='http://recommender-service.local.pcfdev.io/Recommender/train' | 
+											logger: log " --deploy
+
+
+
+
+http post  --target http://http-unarticulative-overtheatricalness.local.pcfdev.io --contentType application/json --data '{"input":{ "customerId" : 0, "productId" : 1 }}'
+    
+

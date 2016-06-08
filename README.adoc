@@ -1,0 +1,456 @@
+= GemFire - Greenplum Demo
+
+== Steps to run the demo
+
+=== 1 - Setup Greenplum Database
+
+On an existing GPDB installation: 
+
+  - Download + Install Madlib and Postgis
+   
+   https://network.pivotal.io/products/pivotal-gpdb#/releases/1377/file_groups/250
+
+  - Copy the files __Server/scripts/zip_code_states.csv__ and __Server/scripts/\*.s\*__ to __/home/gpadmin__
+  
+[source,bash]
+----
+ $ scp scripts/zip_codes_states.csv scripts/\*.s\* gpadmin@192.168.9.132:/home/gpadmin
+
+ gpadmin@192.168.9.132's password:
+ zip_codes_states.csv                                                            100% 2363KB   2.3MB/s   00:00
+ model.sql                                                                       100% 5371     5.3KB/s   00:00
+ predict.sql                                                                     100%  102     0.1KB/s   00:00
+ prediction.sh                                                                   100%  402     0.4KB/s   00:00
+----
+
+  - Login to the Greenplum DB instance and run the model.sql script. This will create the table structures we're using. Please ignore the '"transaction_info" doesn't exist' error, if it's your first time running it.
+
+[source,bash]
+----
+
+  [gpdb-sandbox ~]$ psql -d gemfire -f model.sql
+
+DROP TABLE
+CREATE TABLE
+psql:model.sql:23: NOTICE:  drop cascades to rule _RETURN on view transaction_info
+psql:model.sql:23: NOTICE:  drop cascades to view transaction_info
+psql:model.sql:23: NOTICE:  drop cascades to rule _RETURN on view suspect_view
+psql:model.sql:23: NOTICE:  drop cascades to view suspect_view
+DROP TABLE
+CREATE TABLE
+DROP TABLE
+psql:model.sql:36: NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column named 'zip' as the Greenplum Database data distribution key for this table.
+HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
+CREATE TABLE
+COPY 42180
+DROP TABLE
+CREATE TABLE
+CREATE VIEW
+DROP TABLE
+psql:model.sql:59: NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'id' as the Greenplum Database data distribution key for this table.
+HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
+SELECT 0
+psql:model.sql:62: ERROR:  view "transaction_info" does not exist
+CREATE VIEW
+INSERT 0 0  
+----
+
+
+
+=== 2- Start the GemFire cluster
+
+[source,bash]
+----
+
+$ cd Server
+$ ./gradlew serverJar
+:compileJava UP-TO-DATE
+:processResources UP-TO-DATE
+:classes UP-TO-DATE
+:jar
+:serverJar
+
+BUILD SUCCESSFUL
+
+$ ./startup.sh
+
+1. Executing - start locator --name=locator --J=-Dgemfire.http-service-port=7575
+
+.............................
+Locator in /Users/fmelo/sko/Server/locator on frederimelosmbp[10334] as locator is currently online.
+Process ID: 33127
+Uptime: 15 seconds
+GemFire Version: 8.2.0
+Java Version: 1.8.0_40
+Log File: /Users/fmelo/sko/Server/locator/locator.log
+JVM Arguments: -Dgemfire.enable-cluster-configuration=true -Dgemfire.load-cluster-configuration-from-dir=false -Dgemfire.http-service-port=7575 -Dgemfire.launcher.registerSignalHandlers=true -Djava.awt.headless=true -Dsun.rmi.dgc.server.gcInterval=9223372036854775806
+Class-Path: /Users/fmelo/gemfire/lib/gemfire.jar:/Users/fmelo/gemfire/lib/locator-dependencies.jar
+
+Successfully connected to: [host=frederimelosmbp, port=1099]
+
+Cluster configuration service is up and running.
+
+2. Executing - start server --name=server1 --cache-xml-file=src/main/resources/server-cache.xml --classpath='../../lib/gemfire-greenplum-1.0.0-beta-6-SNAPSHOT.jar:../../lib/postgresql-9.4-1206-jdbc4.jar:../build/libs/Server.jar' --J=-Dgemfire.start-dev-rest-api=true --J=-Dgemfire.http-service-port=8888 --locators=geode-server[10334]
+
+...........
+Server in /Users/fmelo/sko/Server/server1 on frederimelosmbp[40404] as server1 is currently online.
+Process ID: 33128
+Uptime: 5 seconds
+GemFire Version: 8.2.0
+Java Version: 1.8.0_40
+Log File: /Users/fmelo/sko/Server/server1/server1.log
+JVM Arguments: -Dgemfire.cache-xml-file=/Users/fmelo/sko/Server/src/main/resources/server-cache.xml -Dgemfire.locators=geode-server[10334] -Dgemfire.use-cluster-configuration=true -Dgemfire.start-dev-rest-api=true -Dgemfire.http-service-port=8888 -XX:OnOutOfMemoryError=kill -KILL %p -Dgemfire.launcher.registerSignalHandlers=true -Djava.awt.headless=true -Dsun.rmi.dgc.server.gcInterval=9223372036854775806
+Class-Path: /Users/fmelo/gemfire/lib/gemfire.jar:../../lib/gemfire-greenplum-1.0.0-beta-6-SNAPSHOT.jar:../../lib/postgresql-9.4-1206-jdbc4.jar:../build/libs/Server.jar:/Users/fmelo/gemfire/lib/server-dependencies.jar
+
+----
+
+=== 3- Start the Web Console
+
+
+- In case you're not deploying it to CloudFoundry, export the "locatorHost" and "locatorPort" environment variables to point to your GemFire locator endpoint. It defaults to "geode-server" on port 10334
+
+[source,bash]
+----
+$ export locatorHost=<your_host_or_ip>
+$ export locatorPort=10334
+----
+
+- Compile the app
+
+As the GemFire-Greenplum connector is not GA yet, we'll add the provided bits (under the "lib" directory) to your local maven repository in order to compile the source code: (you'll need maven installed, of course)
+
+[source,bash]
+----
+$ mvn install:install-file -Dfile=lib/gemfire-greenplum-1.0.0-beta-6-SNAPSHOT.jar -DgroupId=io.pivotal.gemfire -DartifactId=gemfire-greenplum -Dversion=1.0.0-beta-6-SNAPSHOT -Dpackaging=jar
+[INFO] Scanning for projects...
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] ------------------------------------------------------------------------
+[INFO]
+[INFO] --- maven-install-plugin:2.4:install-file (default-cli) @ standalone-pom ---
+[INFO] Installing /Users/fmelo/sko/lib/gemfire-greenplum-1.0.0-beta-6-SNAPSHOT.jar to /Users/fmelo/.m2/repository/io/pivotal/gemfire/gemfire-greenplum/1.0.0-beta-6-SNAPSHOT/gemfire-greenplum-1.0.0-beta-6-SNAPSHOT.jar
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 0.271 s
+[INFO] Finished at: 2016-02-01T19:50:39-08:00
+[INFO] Final Memory: 8M/309M
+[INFO] ------------------------------------------------------------------------
+$ cd WebConsole
+$ ./gradlew jar
+:compileJava UP-TO-DATE
+:processResources UP-TO-DATE
+:classes UP-TO-DATE
+:jar
+
+BUILD SUCCESSFUL
+----
+
+Run the app
+
+- If not using CloudFoundry:
+
+[source,bash]
+----
+$ cd WebConsole
+$ ./gradlew bootRun
+(...)
+Feb 01, 2016 4:52:51 PM io.pivotal.demo.sko.ui.WebConsoleApp logStarted
+INFO: Started WebConsoleApp in 4.958 seconds (JVM running for 5.227)
+----
+
+Make sure you can access the application at http://<host>:8080/index.html
+
+- If you're deploying to CloudFoudry, just create a user-provided service as shown at __WebConsole/cf-createservice.txt__ and use the manifest at __WebConsole/manifest.yml__ to push the app.
+
+[source,bash]
+----
+$ ./gradlew build
+:compileJava UP-TO-DATE
+:processResources UP-TO-DATE
+:classes UP-TO-DATE
+:findMainClass
+:jar
+:bootRepackage
+:assemble
+:compileTestJava UP-TO-DATE
+:processTestResources UP-TO-DATE
+:testClasses UP-TO-DATE
+:test UP-TO-DATE
+:check UP-TO-DATE
+:build
+
+BUILD SUCCESSFUL
+
+Total time: 4.495 secs
+
+$ cf cups gemfire -p '{"locatorHost":"10.68.52.85","locatorPort":"10334", "RestAPI":"http://10.68.52.85:8888/gemfire-api/v1/"}'
+Creating user provided service gemfire in org fmelo-org / space dev as fmelo...
+OK
+
+$ more manifest.yml
+---
+applications:
+- name: webconsole
+  memory: 512M
+  instances: 1
+  host: webconsole
+  path: build/libs/WebConsole.jar
+  services:
+    - gemfire
+
+$ cf push
+Using manifest file /Users/fmelo/sko/WebConsole/manifest.yml
+
+Creating app webconsole in org fmelo-org / space dev as fmelo...
+OK
+(...)
+     state     since                    cpu    memory         disk          details
+#0   running   2016-02-01 06:33:23 PM   0.0%   692K of 512M   26.7M of 1G
+----
+
+Please substitute the IPs and Ports on the service creation command above with your GemFire locator connection details.
+
+
+=== 4- Generate a few transactions to train the Machine Learning process
+
+We'll tell the generator to setup the PoS Devices and add 100000 transactions initially. 
+
+- If not using CloudFoundry, edit the application.properties file to look like the following:
+
+[source,bash]
+----
+$ cd PoS_Emulator
+$ more src/main/resources/application.properties
+
+# replace with your GemFire/Geode endpoint
+geodeUrl=http://192.168.9.1:8888/gemfire-api/v1/ 
+delayInMs=5
+skipSetup=false
+numberOfAccounts=5000
+
+# negative number means it will keep posting continuously
+numberOfTransactions=100000  
+
+$ ./gradlew bootRun
+
+2016-02-01 17:23:47.075  INFO 33355 --- [           main] i.p.demo.sko.TransactionEmulatorApp      : Starting TransactionEmulatorApp on FrederiMelosMBP with PID 33355 (/Users/fmelo/sko/PoS_Emulator/build/classes/main started by fmelo in /Users/fmelo/sko/PoS_Emulator)
+2016-02-01 17:23:47.078  INFO 33355 --- [           main] i.p.demo.sko.TransactionEmulatorApp      : No active profile set, falling back to default profiles: default
+2016-02-01 17:23:47.111  INFO 33355 --- [           main] s.c.a.AnnotationConfigApplicationContext : Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@25bbf683: startup date [Mon Feb 01 17:23:47 PST 2016]; root of context hierarchy
+2016-02-01 17:23:47.672  INFO 33355 --- [           main] o.s.j.e.a.AnnotationMBeanExporter        : Registering beans for JMX exposure on startup
+2016-02-01 17:23:47.689  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : >>>>> RUNNING SETUP
+2016-02-01 17:23:47.689  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : --------------------------------------
+2016-02-01 17:23:47.689  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : >>> Geode rest endpoint: http://192.168.9.1:8888/gemfire-api/v1/
+2016-02-01 17:23:47.690  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : --------------------------------------
+2016-02-01 17:23:47.690  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : >>> Adding 3143 devices ...
+2016-02-01 17:23:55.508  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : >>>>> RUNNING SIMULATION
+2016-02-01 17:23:55.508  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : --------------------------------------
+2016-02-01 17:23:55.509  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : >>> Geode rest endpoint: http://192.168.9.1:8888/gemfire-api/v1/
+2016-02-01 17:23:55.509  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : --------------------------------------
+2016-02-01 17:23:55.509  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : >>> Posting 100000 transactions ...
+2016-02-01 17:48:24.855  INFO 33355 --- [           main] io.pivotal.demo.sko.Emulator             : done
+2016-02-01 17:48:24.933  INFO 33355 --- [           main] i.p.demo.sko.TransactionEmulatorApp      : Started TransactionEmulatorApp in 1478.061 seconds (JVM running for 1478.397)
+2016-02-01 17:48:24.940  INFO 33355 --- [       Thread-1] s.c.a.AnnotationConfigApplicationContext : Closing org.springframework.context.annotation.AnnotationConfigApplicationContext@25bbf683: startup date [Mon Feb 01 17:23:47 PST 2016]; root of context hierarchy
+2016-02-01 17:48:24.954  INFO 33355 --- [       Thread-1] o.s.j.e.a.AnnotationMBeanExporter        : Unregistering JMX-exposed beans on shutdown
+
+BUILD SUCCESSFUL
+
+----
+
+- If using CloudFoudry, use the manifest at __PoS_Emulator/manifest.yml__ to set the properties __numberOfTransactions__ to 100000 and __skipSetup__ to false. Push the application disabling health check (we're not listening to a HTTP port):
+
+[source,bash]
+----
+$ more manifest.yml
+---
+applications:
+- name: pos_emulator
+  memory: 512M
+  instances: 1
+  host: pos_emulator
+  path: build/libs/PoS_Emulator.jar
+  no-route: true
+  services:
+    - gemfire
+  env:
+    skipSetup: false
+    numberOfTransactions: 10000
+    delayInMs: 5
+
+$ ./gradlew build
+:compileJava UP-TO-DATE
+:processResources UP-TO-DATE
+:classes UP-TO-DATE
+:findMainClass
+:jar
+:bootRepackage
+:assemble
+:compileTestJava UP-TO-DATE
+:processTestResources UP-TO-DATE
+:testClasses UP-TO-DATE
+:test UP-TO-DATE
+:check UP-TO-DATE
+:build
+
+BUILD SUCCESSFUL
+
+
+$ cf push --no-start   
+Using manifest file /Users/fmelo/sko/PoS_Emulator/manifest.yml
+
+Creating app pos_emulator in org fmelo-org / space dev as fmelo...
+OK
+
+App pos_emulator is a worker, skipping route creation
+Uploading pos_emulator...
+Uploading app files from: /Users/fmelo/sko/PoS_Emulator/build/libs/PoS_Emulator.jar
+Uploading 322.2K, 86 files
+Done uploading
+OK
+Binding service gemfire to app pos_emulator in org fmelo-org / space dev as fmelo...
+OK
+
+$ cf set-health-check pos_emulator none
+Updating pos_emulator health_check_type to 'none'
+OK
+
+$ cf start pos_emulator
+(...)
+     state     since                    cpu    memory         disk          details
+#0   running   2016-02-01 06:33:23 PM   0.0%   692K of 512M   26.7M of 1G
+
+----
+
+=== 5- Train the Machine Learning process
+
+On the Greenplum server, run 
+
+[source,bash]
+----
+$  psql -d gemfire -f train.sql
+----
+
+You will also configure this to run at each 10 minutes using a cron job (next step) 
+
+=== 6- Setup the Machine Learning train and evaluation on cron
+
+On the Greenplum server, run
+
+[source,bash]
+----
+[gpadmin@gpdb-sandbox ~]$ chmod u+x /home/gpadmin/*.sh
+[gpadmin@gpdb-sandbox ~]$ sudo su
+[root@gpdb-sandbox gpadmin]# echo "* *  *  *  * gpadmin  . /home/gpadmin/.bashrc;/home/gpadmin/prediction.sh" >> /etc/crontab
+[root@gpdb-sandbox gpadmin]# echo "*/10 *  *  *  * gpadmin  . /home/gpadmin/.bashrc;/home/gpadmin/train.sh" >> /etc/crontab
+[root@gpdb-sandbox gpadmin]# /etc/init.d/crond reload;exit
+----
+
+This will make sure the ML model is evaluated every minute and is re-trained at each 10 minutes.
+
+=== 8- Access the WebConsole and run the emulator to see results
+
+Open a browser and point to http://localhost:8080/index.html, in case of local deployment or to the URL given by CloudFoundry (if deploying to CF)
+
+
+Now we'll config the generator to not setup the PoS Devices (we've already done the setup before), set your preferred number of transactions (-1 indicates an infinite loop) and add the desired delay between transactions (helpful to show scalability): 
+
+- If not using CloudFoundry, edit the application.properties file to loop like the following and start the emulator:
+
+[source,bash]
+----
+$ cd PoS_Emulator
+$ more src/main/resources/application.properties
+
+# replace with your GemFire/Geode endpoint
+geodeUrl=http://192.168.9.1:8888/gemfire-api/v1/ 
+delayInMs=50
+skipSetup=true
+numberOfAccounts=5000
+
+# negative number means it will keep posting continuously
+numberOfTransactions=-1
+
+$ ./gradlew bootRun
+2016-02-01 16:53:54.764  INFO 33149 --- [           main] i.p.demo.sko.TransactionEmulatorApp      : Starting TransactionEmulatorApp on FrederiMelosMBP with PID 33149 (/Users/fmelo/sko/PoS_Emulator/build/classes/main started by fmelo in /Users/fmelo/sko/PoS_Emulator)
+2016-02-01 16:53:54.766  INFO 33149 --- [           main] i.p.demo.sko.TransactionEmulatorApp      : No active profile set, falling back to default profiles: default
+2016-02-01 16:53:54.808  INFO 33149 --- [           main] s.c.a.AnnotationConfigApplicationContext : Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@25bbf683: startup date [Mon Feb 01 16:53:54 PST 2016]; root of context hierarchy
+2016-02-01 16:53:55.450  INFO 33149 --- [           main] o.s.j.e.a.AnnotationMBeanExporter        : Registering beans for JMX exposure on startup
+2016-02-01 16:53:55.466  INFO 33149 --- [           main] io.pivotal.demo.sko.Emulator             : >>>>> RUNNING SETUP
+2016-02-01 16:53:55.466  INFO 33149 --- [           main] io.pivotal.demo.sko.Emulator             : --------------------------------------
+2016-02-01 16:53:55.466  INFO 33149 --- [           main] io.pivotal.demo.sko.Emulator             : >>> Geode rest endpoint: http://192.168.9.1:8888/gemfire-api/v1/
+2016-02-01 16:53:55.466  INFO 33149 --- [           main] io.pivotal.demo.sko.Emulator             : --------------------------------------
+2016-02-01 16:54:04.909  INFO 33149 --- [           main] io.pivotal.demo.sko.Emulator             : >>>>> RUNNING SIMULATION
+2016-02-01 16:54:04.909  INFO 33149 --- [           main] io.pivotal.demo.sko.Emulator             : --------------------------------------
+2016-02-01 16:54:04.909  INFO 33149 --- [           main] io.pivotal.demo.sko.Emulator             : >>> Geode rest endpoint: http://192.168.9.1:8888/gemfire-api/v1/
+2016-02-01 16:54:04.909  INFO 33149 --- [           main] io.pivotal.demo.sko.Emulator             : --------------------------------------
+2016-02-01 16:54:04.909  INFO 33149 --- [           main] io.pivotal.demo.sko.Emulator             : >>> Posting 2147483647 transactions ...
+(...)
+----
+
+- If using CloudFoudry, use the manifest at __PoS_Emulator/manifest.yml__ to config the properties and push the app:
+
+[source,bash]
+----
+$ more manifest.yml
+---
+applications:
+- name: pos_emulator
+  memory: 512M
+  instances: 1
+  host: pos_emulator
+  path: build/libs/PoS_Emulator.jar
+  no-route: true
+  services:
+    - gemfire
+  env:
+    skipSetup: true
+    numberOfTransactions: -1
+    delayInMs: 50
+
+$ ./gradlew build
+:compileJava UP-TO-DATE
+:processResources UP-TO-DATE
+:classes UP-TO-DATE
+:findMainClass
+:jar
+:bootRepackage
+:assemble
+:compileTestJava UP-TO-DATE
+:processTestResources UP-TO-DATE
+:testClasses UP-TO-DATE
+:test UP-TO-DATE
+:check UP-TO-DATE
+:build
+BUILD SUCCESSFUL
+
+$ cf push --no-start   
+Using manifest file /Users/fmelo/sko/PoS_Emulator/manifest.yml
+
+Creating app pos_emulator in org fmelo-org / space dev as fmelo...
+OK
+
+App pos_emulator is a worker, skipping route creation
+Uploading pos_emulator...
+Uploading app files from: /Users/fmelo/sko/PoS_Emulator/build/libs/PoS_Emulator.jar
+Uploading 322.2K, 86 files
+Done uploading
+OK
+Binding service gemfire to app pos_emulator in org fmelo-org / space dev as fmelo...
+OK
+
+$ cf set-health-check pos_emulator none
+Updating pos_emulator health_check_type to 'none'
+OK
+
+$ cf start pos_emulator
+(...)
+     state     since                    cpu    memory         disk          details
+#0   running   2016-02-01 06:33:23 PM   0.0%   692K of 512M   26.7M of 1G
+
+----
+You can also scale the emulator to several instances in order to show scalability.
+
+Let it run for at least one minute while checking your browser. You should notice transactions and possible frauds being shown.
+
+image::screenshot.png[Demo Screenshot]
