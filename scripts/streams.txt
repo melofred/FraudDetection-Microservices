@@ -1,0 +1,10 @@
+app import --uri file:////Users/fmelo/FraudDetection-DataMicroservices/scripts/scdf-apps.properties
+
+app register --name enrich --type processor --uri file:///Users/fmelo/FraudDetection-DataMicroservices/Enrich-processor/build/libs/Enrich-processor.jar
+
+stream create fromgem --definition "gemfire --region-name=Transaction --host-addresses=geode-server:10334 | enrich | log" --deploy
+
+stream create --name eval --definition ":fromgem.enrich > pmml --modelLocation=http://192.168.11.1:8080/clustering/model.pmml.xml --inputs='field_0=payload.distance.doubleValue(),field_1=payload.value.doubleValue()'  --inputType='application/x-spring-tuple' --outputType='application/json' | log  " --deploy
+
+stream create --name result --definition ":eval.pmml > filter --expression=#jsonPath(payload,'._output.result')[0].equals('3')  | gemfire --region-name=Suspect --host-addresses=geode-server:10334 --keyExpression=#jsonPath(payload,'id')   " --deploy
+
