@@ -26,17 +26,7 @@ public class Controller {
 	
     public Controller() {
     }
-    
-    @RequestMapping(value="/markSuspect/{id}", method=RequestMethod.GET)   
-	public void markSuspect(@PathVariable("id") Long transactionId) throws Exception{
-    	PdxInstance transaction = GeodeClient.getInstance().getTransaction(transactionId);
-    	TransactionsMap.suspiciousTransactions.addTransaction(transactionId.longValue(), 
-    			((Number)transaction.getField("value")).doubleValue(), 
-    			GeodeClient.getInstance().getPoSLocation(((Number)transaction.getField("deviceId")).longValue()),
-    			true, ((Number)transaction.getField("timestamp")).longValue());
-    }
-    
-    
+        
  
     @RequestMapping(value="/getTransactionsMap")
     public @ResponseBody TransactionsMap getDeviceMap(){

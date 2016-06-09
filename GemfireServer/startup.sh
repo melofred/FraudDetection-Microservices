@@ -1,1 +1,1 @@
-$GEODE_HOME/bin/gfsh run --file scripts/startup.gfsh
+$GEODE_HOME/bin/gfsh run --file startup.gfsh

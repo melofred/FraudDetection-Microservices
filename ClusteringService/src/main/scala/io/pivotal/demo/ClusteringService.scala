@@ -46,7 +46,7 @@ object ClusteringService {
   def TRAINSET_SIZE = 100000
   def NUMBER_OF_ACCOUNTS = 30 
 
-  def NUMBER_OF_CLUSTERS = 3 // Low Risk, Medium Risk, High Risk
+  def NUMBER_OF_CLUSTERS = 3 // Low Risk, Medium-Low, High Risk
   
 
   //val cloud = new CloudFactory().getCloud();

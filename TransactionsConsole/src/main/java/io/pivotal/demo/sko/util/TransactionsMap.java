@@ -2,17 +2,17 @@ package io.pivotal.demo.sko.util;
 
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Vector;
 
 public class TransactionsMap implements Serializable{
 
 	public static TransactionsMap latestTransactions = new TransactionsMap();
 	public static TransactionsMap suspiciousTransactions= new TransactionsMap();
 		
-	
-	private List<MappedTransaction> transactions = new ArrayList<MappedTransaction>();
+	//thread-safe
+	private List<MappedTransaction> transactions = new Vector<MappedTransaction>();
 
 	public TransactionsMap(){}
 	

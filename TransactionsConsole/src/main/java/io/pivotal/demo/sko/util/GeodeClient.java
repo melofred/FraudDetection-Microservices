@@ -37,7 +37,6 @@ public class GeodeClient {
 	
     Region transactions;
     Region suspect;
-    Region PoS;
 
 	static Logger logger = Logger.getLogger(GeodeClient.class.getCanonicalName());
 
@@ -96,12 +95,10 @@ public class GeodeClient {
         queryService = cache.getQueryService();
         
         transactions = cache.getRegion(RegionName.Transaction.name());
-        PoS = cache.getRegion(RegionName.PoS.name());
         suspect = cache.getRegion(RegionName.Suspect.name());
 
         transactions.registerInterest("ALL_KEYS");
         suspect.registerInterest("ALL_KEYS");
-        PoS.registerInterest("ALL_KEYS");
         
         
     }

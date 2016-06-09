@@ -100,7 +100,7 @@ body, html{
 	            		<tr style="width: 100%">
 	            			<th style="text-align: left; width: 50%">Location</th>
 	            			<th style="text-align: left; width: 30%">Value</th>
-	            			<th style="text-align: left; width: 20%">Reason</th>
+	            			<th style="text-align: left; width: 20%"> </th>
 	            		</tr>
 	            	</thead>	            		                
 		                <tbody id="possible_fraud">
@@ -222,12 +222,7 @@ d3.select(self.frameElement).style("height", height + "px");
  * 
  */
 
-	 var loadFromGPDB = function() {
-	 	
-	     $.post("controller/refreshFraudAlertsFromGPDB");            	
-	 };
 
-    
 
     var updateData = function() {
 
@@ -279,7 +274,7 @@ d3.select(self.frameElement).style("height", height + "px");
         			.attr("r", function(d) { return radius(node.radius*3); })
             		.attr("class", "fraud")
             		.transition()
-        			.duration(2000)  // find out how to make it blink
+        			.duration(1000)  // find out how to make it blink
             		.attr("r", function(d) { return radius(1.5); });
         			
         		});   
@@ -295,7 +290,7 @@ d3.select(self.frameElement).style("height", height + "px");
             		row.append("td").style({width: "25%"})
 		       		   	 .text(function(d) {return "$ "+node.value.toFixed(2)});
             		row.append("td").style({width: "25%"})
-       				   	 .text(function(d) {return node.reason});
+       				   	 .text(function(d) {return " " });
         				
         		});  		
                    			
@@ -371,8 +366,7 @@ d3.select(self.frameElement).style("height", height + "px");
 
         
     	
-	    setTimeout(loadFromGPDB, 5000);
-        setTimeout(updateData, 800);
+        setTimeout(updateData, 1000);
 	};
 	
     

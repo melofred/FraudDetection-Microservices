@@ -17,3 +17,5 @@ vf.gf.*
 **/.springBeans
 **/server1/**/*.*
 **/locator/**/*.*
+start-scdf-*.sh
+dump.rdb
