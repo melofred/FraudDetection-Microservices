@@ -72,10 +72,6 @@ object ClusteringService {
   
   val sqlContext = new SQLContext(sc)
   
-//  val coordinates = loadCountiesCoordinates()
-  
-//  val transactionsQuery = "(select t.id as transaction_id, transaction_value, account_id, ts_millis, p.id as device_id, location from transaction t INNER JOIN pos_device p ON (t.device_id = p.id)) as transaction_info"
-  
   val transactionsQuery = "(select distinct on (t.id) account_id, location, latitude, longitude, transaction_value, ts_millis, device_id, t.id as transaction_id from transaction t INNER JOIN pos_device p ON (t.device_id = p.id) INNER JOIN zip_codes z ON (upper(regexp_replace(p.location, '\\s+County', '')) = upper(z.county || ', ' || z.name) ) where latitude IS NOT NULL and longitude IS NOT NULL and account_id<="+NUMBER_OF_ACCOUNTS+" order by t.id desc LIMIT "+TRAINSET_SIZE+") as transaction_info"
   
   
@@ -128,80 +124,10 @@ object ClusteringService {
        
   }
   
-  
-          /*
-  def loadCountiesCoordinates(): DataFrame = {
-    
-      val csvSchema = StructType(Array(
-          StructField("zip", StringType, true),
-          StructField("latitude", DoubleType, true),
-          StructField("longitude", DoubleType, true),
-          StructField("city", StringType, true),
-          StructField("state", StringType, true),
-          StructField("county", StringType, true),    
-          StructField("state_long", StringType, true)
-          ))    
-    
-       val coordinates = sqlContext.read
-            .format("com.databricks.spark.csv")
-            .option("header", "true") // Use first line of all files as header
-            .schema(csvSchema)
-            .load("/Users/fmelo/Documents/workspace-sts/ClusteringService/src/main/resources/zip_codes_states.csv")      
-            .drop("zip").drop("city").drop("state").distinct()
-            
-            
-        val filteredCoordinates = coordinates
-            .withColumn("county_location", upper(concat_ws(", ", coordinates("county"), coordinates("state_long"))))
-            .drop("county").drop("state_long").cache()
-            
-        val coordinateRDD = filteredCoordinates.filter( coordinates("latitude").isNotNull && coordinates("longitude").isNotNull).map { x =>       
-          (x.getString(x.fieldIndex("county_location")), x.getDouble(x.fieldIndex("latitude"))+":"+x.getDouble(x.fieldIndex("longitude")) )
-        }        
-              
-        sc.toRedisKV(coordinateRDD)            
-            
-        return filteredCoordinates
-            
-  }*/
-/*  
-  def distanceBetweenLocations(location1: String, location2: String): Double = {
-
-    val loc1 = coordinates.filter(coordinates("county_location") === location1)
-    
-    if (loc1.count()==0 || loc1.first()==null || loc1.first().anyNull) return 0
-    val loc1Row = loc1.first()
-    
-    
-    val lat1 = loc1Row.getDouble(loc1Row.fieldIndex("latitude"))
-    val long1 = loc1Row.getDouble(loc1Row.fieldIndex("longitude"))
-    
-    val loc2 = coordinates.filter(coordinates("county_location") === location2)
-
-
-    if (loc2.count()==0 || loc2.first()==null || loc2.first().anyNull) return 0
-    val loc2Row = loc2.first()
-    
-    val lat2 = loc2Row.getDouble(loc2Row.fieldIndex("latitude"))
-    val long2 = loc2Row.getDouble(loc2Row.fieldIndex("longitude"))
-    
-    return Util.calculateDistance(lat1, long1, lat2, long2)
-    
-  }
-  */
-  /*
-  def convertLocation(dataframe: DataFrame): DataFrame = {
-    
-    dataframe
-          .withColumn("_location", upper(trim(regexp_replace(dataframe("location"), "\\s+County", ""))))
-          .drop("location")
-          .withColumnRenamed("_location", "location")
-  }*/
-  
+ 
   def train(): String = {
     
 
-    //val transactions = convertLocation(transactionsDF.sort(desc("ts_millis")).limit(TRAINSET_SIZE)).cache()
-    
     val transactions = transactionsDF.sort(desc("ts_millis")).limit(TRAINSET_SIZE).cache()
     
     val deviceLocations = loadDeviceLocations()

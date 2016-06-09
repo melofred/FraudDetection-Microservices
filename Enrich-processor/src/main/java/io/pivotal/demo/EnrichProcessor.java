@@ -45,23 +45,7 @@ public class EnrichProcessor {
 	@ServiceActivator(inputChannel = Processor.INPUT, outputChannel = Processor.OUTPUT)
 	public Object process(Message<?> message) throws Exception {
 		
-		//MutableMessage<?> result = convertToMutable(input);
-		/*
-		String input = message.getPayload().toString();
-		
-		ObjectMapper mapper = new ObjectMapper();   	
-		Map<String,Object> objects =  null;
-		
-		try{
-			objects = mapper.readValue(input, Map.class);
-		}
-		catch(Exception e){
-			throw new RuntimeException(e);
-		}
-		
-		String account = objects.get("accountId").toString();
-		String device = objects.get("deviceId").toString();
-*/
+
 		SpelExpressionParser spel = new SpelExpressionParser();
 		
 		String account = spel.parseExpression("payload.accountId").getValue(evaluationContext, message).toString();

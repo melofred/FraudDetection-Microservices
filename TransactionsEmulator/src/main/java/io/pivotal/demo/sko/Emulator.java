@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -95,6 +96,9 @@ public class Emulator implements CommandLineRunner {
 			long mean = 100; // mean value for transactions
 			long variance = 40; // variance
 
+			DecimalFormat df = new DecimalFormat();
+			df.setMaximumFractionDigits(2);
+			
 			for (int i=0; i<numberOfTransactions; i++){
 				//Map<String,Object> map = (Map)objects.get(i);
 				Transaction t = new Transaction();
@@ -113,10 +117,11 @@ public class Emulator implements CommandLineRunner {
 				
 				
 				t.setTimestamp(System.currentTimeMillis());
-				t.setValue(Math.abs(mean+random.nextGaussian()*variance));
 				
-				try{
-					//Transaction response = restTemplate.postForObject(geodeURL+RegionName.Transaction, t, Transaction.class);
+				double value = Double.parseDouble(df.format(Math.abs(mean+random.nextGaussian()*variance)));  
+				t.setValue(value);
+				
+				try{					
 					Transaction response = restTemplate.postForObject(scdfUrl, t, Transaction.class);
 				}
 				catch(Exception e){
@@ -138,7 +143,7 @@ public class Emulator implements CommandLineRunner {
 			// Randomly pick a deviceId, in case there's not already one mapped to that account
 			
 			if (accountToDeviceMap.get(accountId)==null){
-				Long deviceId = accountId % counties.size();
+				Long deviceId = new Random().longs(0, counties.size()).iterator().next();
 				accountToDeviceMap.put(accountId, deviceId);
 			}			
 			return accountToDeviceMap.get(accountId);
