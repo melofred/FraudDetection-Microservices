@@ -68,6 +68,7 @@ public class EnrichProcessor {
 			
 			DecimalFormat df = new DecimalFormat();
 			df.setMaximumFractionDigits(2);
+			df.setGroupingUsed(false);
 			
 			homeLat = Double.parseDouble(homeSplit[0].trim());
 			homeLong = Double.parseDouble(homeSplit[1].trim());			
