@@ -1,5 +1,7 @@
 package io.pivotal.demo;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -10,8 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "/clustering")
 public class Controller {
 	
-	final private double RECOMMENDATION_THRESHOLD = 0.5;
-	static private String pmmlModel; 
+	@Autowired
+	private RedisTemplate<String,String> redis;
+	
+	private static final String key = "PMML";
 	
     public Controller() {
     }
@@ -24,7 +28,8 @@ public class Controller {
      */
     @RequestMapping(value="/model.pmml.xml", method=RequestMethod.GET)    
 	public String getPMMLModel(){    	
-    	return pmmlModel;
+    	String model = redis.boundValueOps(key).get();
+    	return model==null?"":model;
     } 
     
 
@@ -33,8 +38,9 @@ public class Controller {
      */
     @RequestMapping(value="/train", method=RequestMethod.GET)    
 	public String trainAndSave(){    	
-    	pmmlModel = ClusteringService.train();
-    	return pmmlModel;
+    	String model = ClusteringService.train();
+    	redis.opsForValue().set(key, model);
+    	return model;
     	
     }    
 	

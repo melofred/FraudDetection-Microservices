@@ -31,6 +31,7 @@ import org.apache.log4j.Logger
 import org.springframework.context.annotation.Configuration
 import org.springframework.cloud.service.common.RedisServiceInfo
 import com.redislabs.provider.redis.toRedisContext
+import org.mortbay.util.ajax.JSON
 
 
 
@@ -44,25 +45,24 @@ object ClusteringService {
 
   def HOME_LOCATION_WINDOW_SIZE = 25
   def TRAINSET_SIZE = 100000
-  def NUMBER_OF_ACCOUNTS = 30 
+  def NUMBER_OF_ACCOUNTS = 100 
 
   def NUMBER_OF_CLUSTERS = 3 // Low Risk, Medium-Low, High Risk
   
 
-  //val cloud = new CloudFactory().getCloud();
-  //val redisInfo = cloud.getServiceInfo("redis").asInstanceOf[RedisServiceInfo]
+  val cloud = new CloudFactory().getCloud();
+  val redisInfo = cloud.getServiceInfo("redis").asInstanceOf[RedisServiceInfo]
   
   
   val conf = new SparkConf().setMaster("local[*]")
                 .setAppName("FraudDetection")
                 .set("spark.eventLog.enabled", "false")
-         //               .set("redis.host", redisInfo.getHost)
-        //.set("redis.port", redisInfo.getPort.toString())
-        //.set("redis.auth", redisInfo.getPassword)
-
-                .set("redis.host", "redis.local.pcfdev.io")
-                .set("redis.port", "36263")
-                .set("redis.auth", "70ab1ec8-9b07-4311-b12c-f4f6e78c2101")
+                .set("redis.host", redisInfo.getHost)
+                .set("redis.port", redisInfo.getPort.toString())
+                .set("redis.auth", redisInfo.getPassword)
+//                .set("redis.host", "redis.local.pcfdev.io")
+//                .set("redis.port", "36263")
+//                .set("redis.auth", "70ab1ec8-9b07-4311-b12c-f4f6e78c2101")
   
                 
                 
@@ -72,11 +72,11 @@ object ClusteringService {
   
   val sqlContext = new SQLContext(sc)
   
-  val transactionsQuery = "(select distinct on (t.id) account_id, location, latitude, longitude, transaction_value, ts_millis, device_id, t.id as transaction_id from transaction t INNER JOIN pos_device p ON (t.device_id = p.id) INNER JOIN zip_codes z ON (upper(regexp_replace(p.location, '\\s+County', '')) = upper(z.county || ', ' || z.name) ) where latitude IS NOT NULL and longitude IS NOT NULL and account_id<="+NUMBER_OF_ACCOUNTS+" order by t.id desc LIMIT "+TRAINSET_SIZE+") as transaction_info"
+  val transactionsQuery = "(select distinct on (t.id) account_id, location, latitude, longitude, transaction_value, ts_millis, device_id, t.id as transaction_id from transaction t INNER JOIN pos_device p ON (t.device_id = p.id) INNER JOIN zip_codes z ON (trim(upper(regexp_replace(p.location, ' County', ''))) = upper(z.county || ', ' || z.name) ) where latitude IS NOT NULL and longitude IS NOT NULL and account_id<="+NUMBER_OF_ACCOUNTS+" order by t.id desc LIMIT "+TRAINSET_SIZE+") as transaction_info"
   
   
   val transactionsDF = sqlContext.read.format("jdbc").options(Map(
-          "url" -> "jdbc:postgresql://127.0.0.1:5432/gemfire?user=pivotal&password=pivotal",          
+          "url" -> getGpdbURL(),          
           "driver" -> "org.postgresql.Driver",
           "dbtable" -> transactionsQuery,
           "partitionColumn" -> "account_id",
@@ -85,13 +85,27 @@ object ClusteringService {
           "numPartitions" -> "1"))
           .load()
          
+          
+          
+  def getGpdbURL(): String= {
+    
+    	val vcapServices = System.getenv("VCAP_SERVICES");
+    	if (vcapServices==null || vcapServices.isEmpty()) return "jdbc:postgresql://192.168.11.1:5432/gemfire?user=pivotal\u0026password=pivotal";
+    	    	
+  		val parsed = JSON.parse(vcapServices).asInstanceOf[java.util.Map[String,Object]]
+  		val userProvided = parsed.get("user-provided").asInstanceOf[Array[Object]];
+  		val credentials = userProvided(0).asInstanceOf[java.util.Map[String,Object]].get("credentials").asInstanceOf[java.util.Map[String,Object]];
+  		credentials.get("URL").toString();
+		    
+  }
+          
   def loadHomeLocations(): DataFrame = {
     
-      val locationsQuery = "(select distinct on (account_id) account_id, location, count(location), latitude, longitude from transaction t INNER JOIN pos_device p ON (t.device_id = p.id) INNER JOIN (select latitude, longitude, county, name, count(zip) from zip_codes group by county, name, latitude, longitude) z ON (upper(regexp_replace(p.location, '\\s+County', '')) = upper(z.county || ', ' || z.name) ) where account_id<="+NUMBER_OF_ACCOUNTS+" group by account_id, location, latitude, longitude order by account_id, count(location) desc, location ) as home_locations"
+      val locationsQuery = "(select distinct on (account_id) account_id, location, count(location), latitude, longitude from transaction t INNER JOIN pos_device p ON (t.device_id = p.id) INNER JOIN (select latitude, longitude, county, name, count(zip) from zip_codes group by county, name, latitude, longitude) z ON (trim(upper(regexp_replace(p.location, ' County', ''))) = upper(z.county || ', ' || z.name) ) where account_id<="+NUMBER_OF_ACCOUNTS+" group by account_id, location, latitude, longitude order by account_id, count(location) desc, location ) as home_locations"
       // currently takes the location of the largest number of transactions as "home location"
       
       val locations = sqlContext.read.format("jdbc").options(Map(
-          "url" -> "jdbc:postgresql://127.0.0.1:5432/gemfire?user=pivotal&password=pivotal",
+          "url" -> getGpdbURL(),
           "dbtable" -> locationsQuery,
           "partitionColumn" -> "account_id",
           "lowerBound" -> "0",
@@ -106,10 +120,10 @@ object ClusteringService {
   
   def loadDeviceLocations(): DataFrame = {
     
-       val devicesQuery = "(select distinct on (id) id as device_id, location, latitude, longitude from pos_device p INNER JOIN (select latitude, longitude, county, name from zip_codes group by county, name, latitude, longitude) z ON (upper(regexp_replace(p.location, '\\s+County', '')) = upper(z.county || ', ' || z.name) ) group by device_id, location, latitude, longitude order by device_id, location ) as device_locations"
+       val devicesQuery = "(select distinct on (id) id as device_id, location, latitude, longitude from pos_device p INNER JOIN (select latitude, longitude, county, name from zip_codes group by county, name, latitude, longitude) z ON (trim(upper(regexp_replace(p.location, ' County', ''))) = upper(z.county || ', ' || z.name) ) group by device_id, location, latitude, longitude order by device_id, location ) as device_locations"
     
        sqlContext.read.format("jdbc").options(Map(
-          "url" -> "jdbc:postgresql://127.0.0.1:5432/gemfire?user=pivotal&password=pivotal",
+          "url" -> getGpdbURL(),
           "dbtable" -> devicesQuery,
           "partitionColumn" -> "device_id",
           "lowerBound" -> "0",
@@ -117,17 +131,12 @@ object ClusteringService {
           "numPartitions" -> "1"))
           .load()          
           
-   
-          
-       
-          
        
   }
   
  
   def train(): String = {
     
-
     val transactions = transactionsDF.sort(desc("ts_millis")).limit(TRAINSET_SIZE).cache()
     
     val deviceLocations = loadDeviceLocations()
@@ -135,7 +144,7 @@ object ClusteringService {
     sc.toRedisKV(deviceLocations.map { x =>  
          ("device::"+x.getLong(x.fieldIndex("device_id")), x.getDouble(x.fieldIndex("latitude"))+":"+x.getDouble(x.fieldIndex("longitude"))   )  // device_id x location
        })
-    
+       
     val homeLocations = loadHomeLocations()
     
     val homeLocationsRowsMap = homeLocations.map { x =>  
@@ -149,7 +158,6 @@ object ClusteringService {
     sc.toRedisKV(homeLocationsKV)
     
     val homeLocationsKVMap = homeLocationsKV.collect().toMap
-    
 
     val trainSet = transactions.map { x => 
     
@@ -176,10 +184,11 @@ object ClusteringService {
     }
         
     val scaler = new StandardScaler().fit(trainSet)
-    
+
     val kMeansModel = KMeans.train(
                       scaler.transform(trainSet), NUMBER_OF_CLUSTERS, 20)
 
+                      
     return  kMeansModel.toPMML()
     
   

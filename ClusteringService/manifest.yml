@@ -1,7 +1,7 @@
 ---
 applications:
 - name: clustering-service
-  memory: 1500MB
+  memory: 1024MB
   instances: 1
   host: clustering-service
   path: build/libs/ClusteringService-1.0.jar
@@ -9,3 +9,4 @@ applications:
     SPRING_PROFILES_ACTIVE: cloud    
   services:
    - redis
+   - gpdb

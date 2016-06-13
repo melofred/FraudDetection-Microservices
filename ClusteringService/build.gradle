@@ -86,29 +86,24 @@ dependencies {
 	
 	compile ('com.databricks:spark-csv_2.10:1.4.0')
 	
-	compile ('org.springframework.cloud:spring-cloud-spring-service-connector:1.2.2.RELEASE'){
-		exclude group: 'com.fasterxml.jackson.core'
-		exclude (group: 'org.springframework.boot', module: 'spring-boot-starter-logging')	
-	}
-	
-	compile ('org.springframework.cloud:spring-cloud-cloudfoundry-connector:1.2.2.RELEASE'){
-		exclude group: 'com.fasterxml.jackson.core'
-		exclude (group: 'org.springframework.boot', module: 'spring-boot-starter-logging')	
-	}	
-	
-	// Spring Cloud Stream	
-	//compile ('org.springframework.cloud:spring-cloud-stream:1.0.0.RELEASE')
-	//compile ('org.springframework.boot:spring-boot-configuration-processor')
-	//compile ('org.springframework.integration:spring-integration-xml'){
-	// 	exclude group: 'commons-logging'
-	//}
+
+
 	compile ('org.springframework.boot:spring-boot-starter-logging')
+
+	compile('org.springframework.boot:spring-boot-starter-redis'){
+		exclude group: 'com.fasterxml.jackson.core'
+	}
 
 	compile ('com.redislabs:spark-redis:0.1.1'){
     	exclude group: 'org.slf4j'	
 		exclude group: 'org.scala-lang'
 		exclude group: 'org.apache.spark'	
 	}
+	
+
+	compile ('org.springframework.cloud:spring-cloud-spring-service-connector:1.2.2.RELEASE')
+	compile ('org.springframework.cloud:spring-cloud-cloudfoundry-connector:1.2.2.RELEASE')
+		
 }
 
 
