@@ -5,5 +5,13 @@
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f0\fs24 \cf0 fromgem = gemfire --region-name=Transaction --host-addresses=geode-server:10334 | enrich | log\
-eval = :fromgem.enrich > pmml --modelLocation=http://192.168.11.1:8080/clustering/model.pmml.xml --inputs='field_0=payload.distance.doubleValue(),field_1=payload.value.doubleValue()'  --inputType='application/x-spring-tuple' --outputType='application/json' | log\
-result = :eval.pmml > filter --expression=#jsonPath(payload,'._output.result')[0].equals('3')  | gemfire --region-name=Suspect --host-addresses=geode-server:10334 --keyExpression=#jsonPath(payload,'id')}
+\
+eval = :fromgem.enrich > pmml --modelLocation=http://clustering-service.local.pcfdev.io/clustering/model.pmml.xml --inputs='field_0=payload.distance.doubleValue(),field_1=payload.value.doubleValue()'  --inputType='application/x-spring-tuple' --outputType='application/json' | log\
+\
+result = :eval.pmml > filter --expression=#jsonPath(payload,'._output.result')[0].equals('3')  | gemfire --region-name=Suspect --host-addresses=geode-server:10334 --keyExpression=#jsonPath(payload,'id')\
+\
+\'97\
+app import --uri file:////Users/fmelo/FraudDetection-DataMicroservices/scripts/scdf-apps.properties\
+\
+app register --name enrich --type processor --uri maven://io.pivotal.demo:enricher-processor:1.0.0.BUILD-SNAPSHOT --force\
+}

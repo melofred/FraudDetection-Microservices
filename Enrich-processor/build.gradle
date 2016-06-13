@@ -18,6 +18,12 @@ apply plugin: 'eclipse'
 apply plugin: 'java'
 apply plugin: 'spring-boot' 
 apply plugin: "io.spring.dependency-management"
+apply plugin: 'maven'
+
+group = 'io.pivotal.demo'
+archivesBaseName = 'enricher-processor'
+version = '1.0.0.BUILD-SNAPSHOT'
+
 
 repositories {
     maven {
