@@ -1,2 +1,2 @@
-start locator --name=locator --J=-Dgemfire.http-service-port=7575 --hostname-for-clients=192.168.11.1 
-start server --name=server1 --cache-xml-file=src/main/resources/server-cache.xml --J=-Dgemfire.start-dev-rest-api=true --J=-Dgemfire.http-service-bind-address=192.168.11.1 --J=-Dgemfire.http-service-port=8888 --locators=192.168.11.1[10334] --hostname-for-clients=192.168.11.1 --server-bind-address=192.168.11.1
+start locator --name=locator --J=-Dgemfire.http-service-port=7575 --hostname-for-clients=192.168.11.1  
+start server --name=server1 --cache-xml-file=src/main/resources/server-cache.xml --J=-Dgemfire.start-dev-rest-api=true --J=-Dgemfire.http-service-bind-address=192.168.11.1 --J=-Dgemfire.http-service-port=8888 --locators=192.168.11.1[10334] --hostname-for-clients=192.168.11.1 --server-bind-address=192.168.11.1 

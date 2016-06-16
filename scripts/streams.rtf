@@ -13,5 +13,5 @@ result = :eval.pmml > filter --expression=#jsonPath(payload,'._output.result')[0
 \'97\
 app import --uri file:////Users/fmelo/FraudDetection-DataMicroservices/scripts/scdf-apps.properties\
 \
-app register --name enrich --type processor --uri maven://io.pivotal.demo:enricher-processor:1.0.0.BUILD-SNAPSHOT --force\
+app register --name enrich --type processor --uri maven://io.pivotal.demo:enricher-processor:1.0.0.BUILD-SNAPSHOT \
 }
