@@ -60,9 +60,6 @@ object ClusteringService {
                 .set("redis.host", redisInfo.getHost)
                 .set("redis.port", redisInfo.getPort.toString())
                 .set("redis.auth", redisInfo.getPassword)
-//                .set("redis.host", "redis.local.pcfdev.io")
-//                .set("redis.port", "36263")
-//                .set("redis.auth", "70ab1ec8-9b07-4311-b12c-f4f6e78c2101")
   
                 
                 
