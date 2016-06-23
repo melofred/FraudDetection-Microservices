@@ -188,7 +188,7 @@ In case you were successful until this point and haven't seen the flagged transa
 * Check the logs for the new two apps deployed by the third stream
 * Redeploy the third stream, filtering by a different cluster.
 
-
+image::fraud-detection.png[Demo Screenshot]
 
 
 
