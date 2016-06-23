@@ -87,7 +87,7 @@ Successfully registered applications: [source.tcp, sink.jdbc, source.http, sink.
 
 Make sure you replace the path in the command with your correct file location.
 
-14. Build and install (./gradlew install) the Enricher-processor application and register it with SCDF.
+14. Build and install (./gradlew build install) the Enricher-processor application and register it with SCDF.
 
 ----
 dataflow:>app register --name enrich --type processor --uri maven://io.pivotal.demo:enricher-processor:1.0.0.BUILD-SNAPSHOT --force
