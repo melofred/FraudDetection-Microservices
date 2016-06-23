@@ -60,15 +60,15 @@ public class EnrichProcessor {
 				locLong=0, 
 				distance=0;
 		
+		DecimalFormat df = new DecimalFormat();
+		df.setMaximumFractionDigits(2);
+		df.setGroupingUsed(false);
+		
 		if (home!=null && location!=null) {
 		
 					
 			String[] homeSplit = home.split(":");
 			String[] locSplit = location.split(":");
-			
-			DecimalFormat df = new DecimalFormat();
-			df.setMaximumFractionDigits(2);
-			df.setGroupingUsed(false);
 			
 			homeLat = Double.parseDouble(homeSplit[0].trim());
 			homeLong = Double.parseDouble(homeSplit[1].trim());			
@@ -79,9 +79,12 @@ public class EnrichProcessor {
 		}
 		
 		MutableMessage<?> result = convertToMutable(message);
+		
+		// making sure the value is correctly formated
+		double value = Double.parseDouble(spel.parseExpression("payload.value").getValue(evaluationContext, message).toString());
+		
+		spel.parseExpression("payload.value").setValue(evaluationContext, result, df.format(value));
 		spel.parseExpression("payload.homeLocation").setValue(evaluationContext, result, home);
-		spel.parseExpression("payload.homeLatitude").setValue(evaluationContext, result, homeLat);
-		spel.parseExpression("payload.homeLongitude").setValue(evaluationContext, result, homeLong);
 		spel.parseExpression("payload.distance").setValue(evaluationContext, result, distance);
 	
 		return result;

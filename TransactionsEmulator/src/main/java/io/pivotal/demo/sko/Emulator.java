@@ -31,9 +31,6 @@ public class Emulator implements CommandLineRunner {
 	    @Value("${geodeUrl}")
 		private String geodeURL;
 		
-	    @Value("${scdfUrl}")
-		private String scdfUrl;
-
 	    @Value("${delayInMs}")
 		private long delay;
 	    
@@ -122,10 +119,10 @@ public class Emulator implements CommandLineRunner {
 				t.setValue(value);
 				
 				try{					
-					Transaction response = restTemplate.postForObject(scdfUrl, t, Transaction.class);
+					Transaction response = restTemplate.postForObject(geodeURL+RegionName.Transaction, t, Transaction.class);
 				}
 				catch(Exception e){
-					logger.warning("Failed to connect to SCDF using URL "+scdfUrl);
+					logger.warning("Failed to connect to Geode using URL "+geodeURL);
 					e.printStackTrace();
 				}
 				Thread.sleep(delay);

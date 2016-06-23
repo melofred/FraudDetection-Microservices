@@ -23,12 +23,3 @@ COPY transaction FROM 'transaction.csv' DELIMITER ',' CSV HEADER;
 COPY zip_codes FROM 'zip_codes_states.csv' DELIMITER ',' CSV HEADER;
 COPY pos_device FROM 'pos_device.csv' DELIMITER ',' CSV HEADER;
 
-
-
-
-
-
---
-select distinct on (t.id) account_id, location, latitude, longitude, transaction_value, ts_millis, device_id, t.id as transaction_id from transaction t INNER JOIN pos_device p ON (t.device_id = p.id) INNER JOIN zip_codes z ON (upper(regexp_replace(p.location, '\\s+County', '')) = upper(z.county || ', ' || z.name) ) where latitude IS NOT NULL and longitude IS NOT NULL and account_id<=30 order by t.id desc LIMIT 100000
-
-select distinct on (id) id as device_id, location, latitude, longitude from pos_device p INNER JOIN (select latitude, longitude, county, name from zip_codes group by county, name, latitude, longitude) z ON (upper(regexp_replace(p.location, '\\s+County', '')) = upper(z.county || ', ' || z.name) ) group by device_id, location, latitude, longitude order by device_id, location
