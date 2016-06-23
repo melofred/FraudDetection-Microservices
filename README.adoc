@@ -26,6 +26,27 @@ image::arch-2.jpg[Architecture]
 * Start GemFire/Geode using the script __GemFireServer/startup.sh__ 
 * Start the Spring Cloud Dataflow server (or deploy it to pcfdev, if you prefer)
 
+=== Additional temporary steps: patching the PMML model
+
+There's a known bug in SCDF's PMML app for which I've created the following PR: https://github.com/spring-cloud/spring-cloud-stream-app-starters/pull/115
+
+That was already merged into the head, but the latest version isn't stable yet. So for now we'll patch the M1 version with our fix.
+This will also make sure all apps are registered locally, so you depend less on good internet connectivity for the demo.
+
+* Clone the repository https://github.com/spring-cloud/spring-cloud-stream-app-starters
+
+* Cd into the repository and apply the patch, by invoking
+----
+Frederico-Melos-MacBook-Pro:spring-cloud-stream-app-starters fmelo$ git am ~/FraudDetection-DataMicroservices/PR-115.patch
+----
+Replace the patch file path with your local information.
+
+* Build and install the repository (__./mvnw -s .settings.xml -U clean install -DskipTests__)
+* Generate the apps (run ./generateApps.sh)
+* Cd into the __apps__ directory.
+* Build and install the apps (__./mvnw -s ../.settings.xml -U clean install -DskipTests__)
+
+
 === Running the app
 
 ==== Setup
@@ -104,7 +125,7 @@ eval = :fromgem.enrich > pmml --modelLocation=http://clustering-service.local.pc
 Replace the host-addresses parameter with your GemFire locator information on the first flow.
 Notice in the second flow we're mapping the PMML model inputs in the PMML XML file with the properties in our enriched payload. Make sure the modelLocation variable has the right URL to your PMML model endpoint. 
 
-==== Deploying the first flow - enriching the payload
+==== Deploying the first stream - enriching the payload
 
 16. Deploy the first flow and see now you have three new applications running on CF
 
