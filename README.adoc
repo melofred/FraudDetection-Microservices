@@ -24,7 +24,8 @@ TODO
 
 * Start pcfdev, if not running yet.
 * Start Greenplum (or PostgreSQL)
-* Use the DDL statements in __scripts/model_postgres.sql__ to create the database model
+* Use the DDL statements in __scripts/model_postgres.sql__ to create the database model. 
+* Import the data from tables using the csv files __scripts/pos_device.csv__, __scripts/zip_codes_states.csv__ and __scripts/transaction.csv__.  This step won't be necessary when GemFire 9.0 is released (it will write transactions directly to Greenplum).
 * Start GemFire/Geode using the script __GemFireServer/startup.sh__ 
 * Start the Spring Cloud Dataflow server (or deploy it to pcfdev, if you prefer)
 
