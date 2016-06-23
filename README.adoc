@@ -36,33 +36,122 @@ TODO
 
 2. Create the gpdb user-provided service in CF using the script __ClusteringService/cf-createservice.txt__ . If necessary, modify it to point to your correct Greenplum/PostgreSQL server
 
-3. Push the app TransactionsConsole to CF. There's a __manifest.yml__ file on the application root folder.
+3. Create a RabbitMQ service on CF called "rabbit". This will be our SCDF transport.
 
-4. Open the TransactionsConsole UI (see the CF assigned host, probably http://transactions-console.local.pcfdev.io) and notice the US Map. 
+----
+[TODO]
+----
 
-5. Now start the TransactionsEmulator app.  You can run __"./gradlew bootRun"__ to start it.  Wait for it to be done with loading the devices and transactions start to be posted.
+4. Create a Redis service on CF called "redis". This will be used by both the ML Clustering app and the custom enricher
 
-6. Switch back to the TransactionsConsole UI and see transactions happening.
+----
+[TODO]
+----
+
+5. Push the app TransactionsConsole to CF. There's a __manifest.yml__ file on the application root folder.
+
+6. Open the TransactionsConsole UI (see the CF assigned host, probably http://transactions-console.local.pcfdev.io) and notice the US Map. 
+
+7. Now start the TransactionsEmulator app.  You can run __"./gradlew bootRun"__ to start it.  Wait for it to be done with loading the devices and transactions start to be posted.
+
+8. Switch back to the TransactionsConsole UI and see transactions happening.
 
 
 ==== Creating and training the Machine Learning model
 
-7. Push the application ClusteringService to CF. There's a __manifest.yml__ file on the application root folder.
+9. Push the application ClusteringService to CF. There's a __manifest.yml__ file on the application root folder.
 
-8. Once the app is running, trigger the model training by accessing the __/clustering/train__ URL (probably http://clustering-service.local.pcfdev.io/clustering/train).  Check the CF logs for that app and see spark querying Greenplum/PostgreSQL and building the model.  It will take a few minutes until the model is trained and the URL will return a few numbers.
+10. Once the app is running, trigger the model training by accessing the __/clustering/train__ URL (probably http://clustering-service.local.pcfdev.io/clustering/train).  Check the CF logs for that app and see spark querying Greenplum/PostgreSQL and building the model.  It will take a few minutes until the model is trained and the URL will return a few numbers.
 
-9. Now the model is trained, check its PMML representation using the url __/clustering/model.pmml.xml__ (http://clustering-service.local.pcfdev.io/clustering/model.pmml.xml)
+11. Now the model is trained, check its PMML representation using the url __/clustering/model.pmml.xml__ (http://clustering-service.local.pcfdev.io/clustering/model.pmml.xml)
 
-10. Notice the clusters assigned by the bottom of the file 
+12. Notice the clusters assigned on the three __<cluster>__ tags by the bottom of the XML. Each cluster is a combination of average values for __"distance from home location"__ and __"transaction value"__ variables. The cluster with the lowest values is likely the one assigned to __low risk transactions__.
 
-[TODO: image] 
-
-==== Creating the flow in SCDF ====
+When evaluating the PMML model, each transaction will be assigned to the closest cluster, based on its distance from the home location (where customer does most transactions) and transaction value.
 
 
-
+==== Creating the first two flows in SCDF 
 
 
 
+13. Using the SCDF shell, import the common applications by running
+
+----
+dataflow:>app import --uri file:////Users/fmelo/FraudDetection-DataMicroservices/scripts/scdf-stream-apps.properties 
+
+Successfully registered applications: [source.tcp, sink.jdbc, source.http, sink.rabbit, source.rabbit, source.ftp, sink.gpfdist, processor.transform, source.sftp, processor.filter, source.file, sink.cassandra, processor.groovy-filter, sink.router, source.trigger, sink.hdfs-dataset, processor.splitter, source.load-generator, sink.file, source.time, source.gemfire, source.twitterstream, sink.tcp, source.jdbc, sink.field-value-counter, sink.redis-pubsub, sink.hdfs, processor.bridge, processor.pmml, processor.httpclient, source.s3, sink.ftp, sink.log, sink.gemfire, sink.aggregate-counter, sink.throughput, source.triggertask, source.gemfire-cq, source.jms, processor.scriptable-transform, sink.counter, sink.websocket, source.mail, processor.groovy-transform, source.syslog]
+----
+
+Make sure you replace the path in the command with your correct file location.
+
+14. Build and install (./gradlew install) the Enricher-processor application and register it with SCDF.
+
+----
+dataflow:>app register --name enrich --type processor --uri maven://io.pivotal.demo:enricher-processor:1.0.0.BUILD-SNAPSHOT --force
+Successfully registered application 'processor:enrich'
+----
+
+15. Create the first flows on either the SCDF Shell or the SCDF UI.  On the UI, use the following DSL:
+
+----
+fromgem = gemfire --region-name=Transaction --host-addresses=geode-server:10334 | enrich | log
+
+eval = :fromgem.enrich > pmml --modelLocation=http://clustering-service.local.pcfdev.io/clustering/model.pmml.xml --inputs='field_0=payload.distance.doubleValue(),field_1=payload.value.doubleValue()'  --inputType='application/x-spring-tuple' --outputType='application/json' | log
+
+----
+
+Replace the host-addresses parameter with your GemFire locator information on the first flow.
+Notice in the second flow we're mapping the PMML model inputs in the PMML XML file with the properties in our enriched payload. Make sure the modelLocation variable has the right URL to your PMML model endpoint. 
 
 
+16. Deploy the first flow and see now you have three new applications running on CF
+
+----
+Frederico-Melos-MacBook-Pro:FraudDetection-DataMicroservices fmelo$ cf apps
+Getting apps in org pcfdev-org / space pcfdev-space as admin...
+OK
+
+name                       requested state   instances   memory   disk   urls
+webconsole                 started           1/1         512M     512M   transactions-console.local.pcfdev.io
+clustering-service         started           1/1         1G       512M   clustering-service.local.pcfdev.io
+dataflow-fromgem-log       started           1/1         512M     512M   dataflow-fromgem-log.local.pcfdev.io
+dataflow-fromgem-enrich    started           1/1         512M     512M   dataflow-fromgem-enrich.local.pcfdev.io
+dataflow-fromgem-gemfire   started           1/1         512M     512M   dataflow-fromgem-gemfire.local.pcfdev.io
+----
+
+17. Once the apps are running, start tailing the logs of the "dataflow-fromgem-log" app and then run the TransactionsEmulator again (see step 7 above). You should see some transactions + enriched data being logged.
+
+----
+[TODO]
+
+----
+
+==== Creating the second flow in SCDF - evaluating against the PMML model
+
+18. Create the second flow called "eval" on either the SCDF Shell or the SCDF UI.  On the UI, use the following DSL:
+
+----
+eval = :fromgem.enrich > pmml --modelLocation=http://clustering-service.local.pcfdev.io/clustering/model.pmml.xml --inputs='field_0=payload.distance.doubleValue(),field_1=payload.value.doubleValue()'  --inputType='application/x-spring-tuple' --outputType='application/json' | log
+----
+
+Notice we're mapping the PMML model inputs in the PMML XML file with the properties in our enriched payload. Make sure the modelLocation variable has the right URL to your PMML model endpoint. 
+
+
+16. Deploy this flow and see now you have two new applications running on CF
+
+----
+Frederico-Melos-MacBook-Pro:FraudDetection-DataMicroservices fmelo$ cf apps
+Getting apps in org pcfdev-org / space pcfdev-space as admin...
+OK
+
+name                       requested state   instances   memory   disk   urls
+webconsole                 started           1/1         512M     512M   transactions-console.local.pcfdev.io
+clustering-service         started           1/1         1G       512M   clustering-service.local.pcfdev.io
+dataflow-fromgem-log       started           1/1         512M     512M   dataflow-fromgem-log.local.pcfdev.io
+dataflow-fromgem-enrich    started           1/1         512M     512M   dataflow-fromgem-enrich.local.pcfdev.io
+dataflow-fromgem-gemfire   started           1/1         512M     512M   dataflow-fromgem-gemfire.local.pcfdev.io
+dataflow-eval-log          started           1/1         512M     512M   dataflow-eval-log.local.pcfdev.io
+dataflow-eval-pmml         started           1/1         512M     512M   dataflow-eval-pmml.local.pcfdev.io
+----
+
+17. Once the apps are running, start tailing the logs of the "dataflow-eval-log" app and then run the TransactionsEmulator again (see step 7 above). You should see some transactions + enriched data being logged.
