@@ -2,7 +2,8 @@
 
 === Architecture overview
 
-TODO
+image::arch-1.png[Demo Screenshot]
+image::arch-2.png[Demo Screenshot]
 
 === Requirements
 
@@ -10,18 +11,14 @@ TODO
   - Apache Geode (tested with v1.0.0-incubating.M2) - to be replaced by GemFire 9.0 when that is released
   - PostgreSQL (tested with 9.5.3) - to be replaced by Greenplum server once GemFire 9.0 is released
   - Spring Cloud Dataflow (tested with 1.0.0.M3)
-  - Spark-redis (tested with v0.1.1) - install in local maven repository
+  - Spark-redis (tested with v0.1.1) - installed in local maven repository
   
 === Preparing the environment
 
-* Export the variable __$GEODE_HOME__, pointing to your local GemFire / Geode server.
-* Edit the file __start-scdf-pcfdev.sh__, in order to comply to your pcfdev environment and SCDF binaries path
-* Edit the file __GemFireServer/startup.gfsh__, replacing the IPs with your local address on the pcfdev network (default is 192.168.11.1, and the pcfdev server would run on 192.168.11.11). If in doubt, check your pcfdev VM Ip address.
+* Export the variable __$GEODE_HOME__, pointing to your local GemFire / Geode server home.
+* Edit the file __start-scdf-pcfdev.sh__, in order to satisfy your pcfdev environment info and SCDF binaries path
+* Edit the file __GemFireServer/startup.gfsh__, replacing the IPs with your local address on the pcfdev network (default is 192.168.11.1, for the pcfdev server running on 192.168.11.11). If in doubt, check your pcfdev VM Ip address.
 * Edit the file __TransactionsEmulator/src/main/resources/application.properties__, replacing the __geodeUrl__ variable with the correct Geode IP. 
-
-[TODO: Remove the scdfUrl variable and manifest.yml from the TransactionEmulator] 
-
-
 * Start pcfdev, if not running yet.
 * Start Greenplum (or PostgreSQL)
 * Use the DDL statements in __scripts/model_postgres.sql__ to create the database model. 
