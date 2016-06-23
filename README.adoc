@@ -2,8 +2,8 @@
 
 === Architecture overview
 
-image::arch-1.png[Demo Screenshot]
-image::arch-2.png[Demo Screenshot]
+image::arch-1.jpg[Architecture]
+image::arch-2.jpg[Architecture]
 
 === Requirements
 
