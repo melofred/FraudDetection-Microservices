@@ -26,7 +26,7 @@ image::arch-2.jpg[Architecture]
 * Start GemFire/Geode using the script __GemFireServer/startup.sh__ 
 * Start the Spring Cloud Dataflow server (or deploy it to pcfdev, if you prefer)
 
-=== Additional temporary steps: patching the PMML model
+=== Additional temporary step: patching the PMML model
 
 There's a known bug in SCDF's PMML app for which I've created the following PR: https://github.com/spring-cloud/spring-cloud-stream-app-starters/pull/115
 
