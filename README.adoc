@@ -7,10 +7,10 @@ image::arch-2.jpg[Architecture]
 
 === Requirements
 
-  - CloudFoundry (tested with pcfdev v0.66)
+  - CloudFoundry (tested with pcfdev v0.21)
   - Apache Geode (tested with v1.0.0-incubating.M2) - to be replaced by GemFire 9.0 when that is released
   - PostgreSQL (tested with 9.5.3) - to be replaced by Greenplum server once GemFire 9.0 is released
-  - Spring Cloud Dataflow (tested with 1.0.0.GA)
+  - Spring Cloud Dataflow (tested with 1.1.0.M2)
   - Spark-redis (tested with v0.1.1) - installed in local maven repository
   
 === Preparing the environment
@@ -26,28 +26,16 @@ image::arch-2.jpg[Architecture]
 * Start GemFire/Geode using the script __GemFireServer/startup.sh__ 
 * Start the Spring Cloud Dataflow server (or deploy it to pcfdev, if you prefer)
 
-=== Additional temporary step: patching the PMML model
+=== Building SCDF apps locally (for offline demo and best performance)
 
-There's a known bug in SCDF's PMML app for which I've created the following PR: https://github.com/spring-cloud/spring-cloud-stream-app-starters/pull/115
-
-That was already merged into the head, but the latest version isn't stable yet. So for now we'll patch the M1 version with our fix.
-This will also make sure all apps are registered locally, so you depend less on good internet connectivity for the demo.
-
-* Clone the repository https://github.com/spring-cloud/spring-cloud-stream-app-starters
-
-* Cd into the repository and apply the patch, by invoking
-----
-Frederico-Melos-MacBook-Pro:spring-cloud-stream-app-starters fmelo$ git am ~/FraudDetection-DataMicroservices/PR-115.patch
-----
-Replace the patch file path with your local information.
-
+* Clone the repository https://github.com/spring-cloud/spring-cloud-stream-app-starters . Cd into it.
 * Build and install the repository (__./mvnw -s .settings.xml -U clean install -DskipTests__)
 * Generate the apps (run ./generateApps.sh)
 * Cd into the __apps__ directory.
-* Build and install the apps (__./mvnw -s ../.settings.xml -U clean install -DskipTests__)
+* Build and install the apps (__mvn -s ../.settings.xml -U clean install -DskipTests__)
 
 
-=== Running the app
+=== Running the demo
 
 ==== Setup
 
